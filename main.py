@@ -49,8 +49,8 @@ def get_crypto_data():
         return None, None, [], "Error"
 
 def send_telegram_alert(message):
-    # آدرس استاندارد، تصحیح‌شده و قطعی وب‌سرویس رسمی تلگرام
-    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    # آدرس کاملاً اصلاح شده و رسمی API تلگرام
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
