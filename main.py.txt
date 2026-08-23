@@ -1,18 +1,28 @@
 import time
 import requests
+import http.server
+import socketserver
+import threading
+import os
 
 # ----------------- CONFIGURATION -----------------
 TELEGRAM_TOKEN = "8890125489:AAGQZiJ1eAdAKDfyffOWGlZkzGUjY215mMc"
 CHAT_ID = "166717773"
 # -------------------------------------------------
 
-last_market_phase = None
-last_whale_signal = None
+def start_dummy_server():
+    """ایجاد یک وب‌سرور مجازی برای زنده نگه داشتن بات روی هاست رایگان رندر"""
+    handler = http.server.SimpleHTTPRequestHandler
+    # رندر پورت را به صورت خودکار از ما می‌خواهد، در غیر این صورت روی پورت ۸۰۸۰ می‌رود
+    port = int(os.environ.get("PORT", 8080))
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        print(f"Dummy web server running on port {port}")
+        httpd.serve_forever()
 
 def get_crypto_data():
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        # دریافت داده‌های کلان بازار از API عمومی کوین‌پاپریقا
+        # آدرس اصلاح شده و دقیق API عمومی کوین‌پاپریقا برای دریافت دامیننس و حجم زنده
         url = "https://coinpaprika.com"
         response = requests.get(url, headers=headers, timeout=15).json()
         
@@ -20,7 +30,6 @@ def get_crypto_data():
         volume_24h = response.get("volume_24h_usd", 0)
         volume_change = response.get("volume_24h_change_24h", 0)
         
-        # تحلیل سیگنال پول هوشمند نهنگ‌ها
         whale_alert = "💡 خنثی (نقدینگی در حال نوسان طبیعی بازار)"
         if volume_change > 15.0 and volume_24h > 50000000000:
             whale_alert = "🚨 ورود سنگین (نهنگ‌ها در حال پمپاژ پول هوشمند!)"
@@ -34,18 +43,14 @@ def get_crypto_data():
         else:
             altcoin_index = 50
 
-        top_narratives = [
-            "AI Infrastructure (هوش مصنوعی)", 
-            "RWA / Tokenization (دارایی‌های واقعی)", 
-            "DePIN Networks (زیرساخت فیزیکی)"
-        ]
+        top_narratives = ["AI (هوش مصنوعی)", "RWA (دارایی‌های واقعی)", "DePIN (زیرساخت فیزیکی)"]
         return round(btc_dominance, 2), int(altcoin_index), top_narratives, whale_alert
     except Exception as e:
         print(f"Data Fetch Error: {e}")
         return None, None, [], "Error"
 
 def send_telegram_alert(message):
-    # آدرس استاندارد و کاملاً تصحیح‌شده تلگرام
+    # آدرس رسمی، قطعی و تصحیح‌شده تلگرام
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
@@ -62,8 +67,6 @@ def send_telegram_alert(message):
         print(f"Connection Error: {e}")
 
 def analyze_market():
-    global last_market_phase, last_whale_signal
-
     print("Checking market conditions & Smart Money...")
     btc_dom, alt_idx, narratives, whale_signal = get_crypto_data()
 
@@ -71,40 +74,35 @@ def analyze_market():
         return
 
     if alt_idx >= 75:
-        current_phase = "ALT_SEASON"
-        status_text = "🚀 **آلت‌سیزن (Altseason) رسماً آغاز شد!**\nپول هوشمند در حال پمپاژ به آلت‌کوین‌هاست."
+        status_text = "🚀 **آلت‌سیزن (Altseason) رسماً آغاز شد!**"
     elif alt_idx <= 25:
-        current_phase = "BITCOIN_SEASON"
-        status_text = "👑 **بیت‌کوین سیزن (Bitcoin Season) آغاز شد!**\nتمرکز بازار روی پادشاه کریپتو است."
+        status_text = "👑 **بیت‌کوین سیزن (Bitcoin Season) آغاز شد!**"
     else:
-        current_phase = "NEUTRAL"
-        status_text = "⚖️ **بازار در وضعیت خنثی و تعادل قرار دارد.**\nنوسانات به صورت پراکنده روی تک‌پروژه‌هاست."
+        status_text = "⚖️ **بازار در وضعیت خنثی قرار دارد.**"
 
     narratives_text = "\n".join([f"  🔥 {name}" for name in narratives])
 
     report_message = (
         f"{status_text}\n\n"
-        f"🐋 **ردپای نهنگ‌ها و پول هوشمند (Smart Money):**\n"
+        f"🐋 **ردپای نهنگ‌ها و پول هوشمند:**\n"
         f"🔹 وضعیت نقدینگی نهنگ‌ها: `{whale_signal}`\n"
-        f"🎯 روایت‌های برتر زیر ذره‌بین نقدینگی:\n{narratives_text}\n\n"
-        f"📊 **شاخص‌های عمومی بازار:**\n"
+        f"🎯 روایت‌های برتر: \n{narratives_text}\n\n"
+        f"📊 **شاخص‌های عمومی:**\n"
         f"🔹 شاخص آلت‌سیزن: `{alt_idx}/100`\n"
         f"📉 دامیننس بیت‌کوین: `{btc_dom}%`\n\n"
         f"⏰ رادار اختصاصی پول هوشمند کریپتو"
     )
-
-    if current_phase != last_market_phase or whale_signal != last_whale_signal:
-        send_telegram_alert(report_message)
-        last_market_phase = current_phase
-        last_whale_signal = whale_signal
-        print("Market alert process completed.")
-    else:
-        print("Market stable. No alert needed.")
+    send_telegram_alert(report_message)
 
 if __name__ == "__main__":
-    print("Market & Whale Monitoring Bot is running...")
+    # اجرای سرور مجازی وب در یک شاخه فرعی برای زنده ماندن روی رندر
+    t = threading.Thread(target=start_dummy_server, daemon=True)
+    t.start()
+
+    # اجرای اولین گزارش بلافاصله بعد از روشن شدن
     analyze_market()
-    
+
+    # بررسی خودکار بازار در هر ۱ ساعت یک‌بار
     while True:
-        time.sleep(3600)  # بررسی هر ۱ ساعت
+        time.sleep(3600)
         analyze_market()
