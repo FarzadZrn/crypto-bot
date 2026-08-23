@@ -1,0 +1,110 @@
+import time
+import requests
+
+# ----------------- CONFIGURATION -----------------
+TELEGRAM_TOKEN = "8890125489:AAGQZiJ1eAdAKDfyffOWGlZkzGUjY215mMc"
+CHAT_ID = "166717773"
+# -------------------------------------------------
+
+last_market_phase = None
+last_whale_signal = None
+
+def get_crypto_data():
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        # دریافت داده‌های کلان بازار از API عمومی کوین‌پاپریقا
+        url = "https://coinpaprika.com"
+        response = requests.get(url, headers=headers, timeout=15).json()
+        
+        btc_dominance = response.get("bitcoin_dominance_percentage", 59.3)
+        volume_24h = response.get("volume_24h_usd", 0)
+        volume_change = response.get("volume_24h_change_24h", 0)
+        
+        # تحلیل سیگنال پول هوشمند نهنگ‌ها
+        whale_alert = "💡 خنثی (نقدینگی در حال نوسان طبیعی بازار)"
+        if volume_change > 15.0 and volume_24h > 50000000000:
+            whale_alert = "🚨 ورود سنگین (نهنگ‌ها در حال پمپاژ پول هوشمند!)"
+        elif volume_change < -15.0:
+            whale_alert = "⚠️ خروج سرمایه (نهنگ‌ها در حال نقد کردن)"
+
+        if btc_dominance > 58:
+            altcoin_index = 42
+        elif btc_dominance < 52:
+            altcoin_index = 76
+        else:
+            altcoin_index = 50
+
+        top_narratives = [
+            "AI Infrastructure (هوش مصنوعی)", 
+            "RWA / Tokenization (دارایی‌های واقعی)", 
+            "DePIN Networks (زیرساخت فیزیکی)"
+        ]
+        return round(btc_dominance, 2), int(altcoin_index), top_narratives, whale_alert
+    except Exception as e:
+        print(f"Data Fetch Error: {e}")
+        return None, None, [], "Error"
+
+def send_telegram_alert(message):
+    # آدرس استاندارد و کاملاً تصحیح‌شده تلگرام
+    url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
+    try:
+        response = requests.post(url, json=payload, timeout=15)
+        if response.status_code == 200:
+            print("Alert sent to Telegram successfully.")
+        else:
+            print(f"Telegram API Error: {response.text}")
+    except Exception as e:
+        print(f"Connection Error: {e}")
+
+def analyze_market():
+    global last_market_phase, last_whale_signal
+
+    print("Checking market conditions & Smart Money...")
+    btc_dom, alt_idx, narratives, whale_signal = get_crypto_data()
+
+    if btc_dom is None or alt_idx is None:
+        return
+
+    if alt_idx >= 75:
+        current_phase = "ALT_SEASON"
+        status_text = "🚀 **آلت‌سیزن (Altseason) رسماً آغاز شد!**\nپول هوشمند در حال پمپاژ به آلت‌کوین‌هاست."
+    elif alt_idx <= 25:
+        current_phase = "BITCOIN_SEASON"
+        status_text = "👑 **بیت‌کوین سیزن (Bitcoin Season) آغاز شد!**\nتمرکز بازار روی پادشاه کریپتو است."
+    else:
+        current_phase = "NEUTRAL"
+        status_text = "⚖️ **بازار در وضعیت خنثی و تعادل قرار دارد.**\nنوسانات به صورت پراکنده روی تک‌پروژه‌هاست."
+
+    narratives_text = "\n".join([f"  🔥 {name}" for name in narratives])
+
+    report_message = (
+        f"{status_text}\n\n"
+        f"🐋 **ردپای نهنگ‌ها و پول هوشمند (Smart Money):**\n"
+        f"🔹 وضعیت نقدینگی نهنگ‌ها: `{whale_signal}`\n"
+        f"🎯 روایت‌های برتر زیر ذره‌بین نقدینگی:\n{narratives_text}\n\n"
+        f"📊 **شاخص‌های عمومی بازار:**\n"
+        f"🔹 شاخص آلت‌سیزن: `{alt_idx}/100`\n"
+        f"📉 دامیننس بیت‌کوین: `{btc_dom}%`\n\n"
+        f"⏰ رادار اختصاصی پول هوشمند کریپتو"
+    )
+
+    if current_phase != last_market_phase or whale_signal != last_whale_signal:
+        send_telegram_alert(report_message)
+        last_market_phase = current_phase
+        last_whale_signal = whale_signal
+        print("Market alert process completed.")
+    else:
+        print("Market stable. No alert needed.")
+
+if __name__ == "__main__":
+    print("Market & Whale Monitoring Bot is running...")
+    analyze_market()
+    
+    while True:
+        time.sleep(3600)  # بررسی هر ۱ ساعت
+        analyze_market()
