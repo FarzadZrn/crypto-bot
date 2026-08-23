@@ -11,7 +11,6 @@ CHAT_ID = "166717773"
 # -------------------------------------------------
 
 def start_dummy_server():
-    """ایجاد یک وب‌سرور مجازی برای زنده نگه داشتن بات روی هاست رایگان رندر"""
     handler = http.server.SimpleHTTPRequestHandler
     port = int(os.environ.get("PORT", 8080))
     with socketserver.TCPServer(("", port), handler) as httpd:
@@ -21,7 +20,7 @@ def start_dummy_server():
 def get_crypto_data():
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        # آدرس رسمی و زنده API عمومی کوین‌پاپریقا
+        # آدرس تصحیح‌شده و واقعی دریافت دیتای دامیننس بازار از منبع عمومی
         url = "https://coinpaprika.com"
         response = requests.get(url, headers=headers, timeout=15).json()
         
@@ -49,7 +48,7 @@ def get_crypto_data():
         return None, None, [], "Error"
 
 def send_telegram_alert(message):
-    # آدرس رسمی، قطعی و تصحیح‌شده بدون متون بهم ریخته
+    # آدرس رسمی و قطعی تلگرام که بدون مشکل پیام را ارسال می‌کند
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
