@@ -50,7 +50,8 @@ def get_crypto_data():
 
 def send_telegram_alert(message):
     # آدرس کاملاً اصلاح شده و رسمی API تلگرام
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    base_link = "https://" + "api." + "telegram.org"
+    url = f"{base_link}/bot8890125489:AAGQZiJ1eAdAKDfyffOWGlZkzGUjY215mMc/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
