@@ -1,9 +1,9 @@
+import os
 import time
-import requests
+import threading
 import http.server
 import socketserver
-import threading
-import os
+import requests
 
 # ----------------- CONFIGURATION -----------------
 TELEGRAM_TOKEN = "8890125489:AAGQZiJ1eAdAKDfyffOWGlZkzGUjY215mMc"
@@ -11,6 +11,7 @@ CHAT_ID = "166717773"
 # -------------------------------------------------
 
 def start_dummy_server():
+    """ایجاد یک وب‌سرور مجازی برای زنده نگه داشتن بات روی هاست رایگان رندر"""
     handler = http.server.SimpleHTTPRequestHandler
     port = int(os.environ.get("PORT", 8080))
     with socketserver.TCPServer(("", port), handler) as httpd:
@@ -20,7 +21,7 @@ def start_dummy_server():
 def get_crypto_data():
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        # آدرس تصحیح‌شده و واقعی دریافت دیتای دامیننس بازار از منبع عمومی
+        # دریافت داده‌های کلان بازار از API عمومی کوین‌پاپریقا
         url = "https://coinpaprika.com"
         response = requests.get(url, headers=headers, timeout=15).json()
         
@@ -48,7 +49,7 @@ def get_crypto_data():
         return None, None, [], "Error"
 
 def send_telegram_alert(message):
-    # آدرس رسمی و قطعی تلگرام که بدون مشکل پیام را ارسال می‌کند
+    # آدرس استاندارد، تصحیح‌شده و قطعی API تلگرام
     url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
